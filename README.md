@@ -2,7 +2,7 @@
 
 ## Descripción del Proyecto
 
-PortTrack es una **plataforma de navegación portuaria completa** que implementa la arquitectura del diagrama proporcionado, permitiendo monitorear y gestionar el flujo de embarcaciones en un puerto comercial con capacidades avanzadas de monitoreo, logging y seguridad.
+PortTrack es una plataforma de navegación portuaria completa que permite monitorear y gestionar el flujo de embarcaciones en un puerto comercial con capacidades avanzadas de monitoreo, logging y seguridad.
 
 ## Arquitectura Completa
 
@@ -86,7 +86,7 @@ Para información técnica detallada, consulta la documentación en la carpeta `
 
 ### Gateway y Proxy
 - **Nginx**: http://localhost:80
-- **AWS API Gateway**: https://your-api-id.execute-api.us-east-1.amazonaws.com/dev
+- **AWS API Gateway**: https://example.execute-api.us-east-1.amazonaws.com/dev
 
 ## Características Principales
 
@@ -211,9 +211,3 @@ curl http://localhost:9200/_cluster/health
 ## Licencia
 
 MIT License
-
-## Soporte
-
-- **Documentación**: Ver archivos en `docs/`
-- **Issues**: GitHub Issues
-- **Discusiones**: GitHub Discussions
