@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: porttrack
+  labels:
+    name: porttrack
+    environment: base
+    app.kubernetes.io/name: porttrack
+    app.kubernetes.io/part-of: porttrack-platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: porttrack-monitoring
+  labels:
+    name: porttrack-monitoring
+    environment: base
+    app.kubernetes.io/name: porttrack-monitoring
+    app.kubernetes.io/part-of: porttrack-platform

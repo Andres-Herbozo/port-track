@@ -1,0 +1,222 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: porttrack-rules
+  namespace: porttrack-monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: porttrack-monitoring
+spec:
+  groups:
+    # Reglas de la aplicación PortTrack
+    - name: porttrack-application
+      rules:
+        - alert: PortTrackAppDown
+          expr: up{job="porttrack-app"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "PortTrack application is down"
+            description: "PortTrack application has been down for more than 1 minute"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-overview"
+        
+        - alert: PortTrackHighResponseTime
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="porttrack-app"}[5m])) > 2
+          for: 5m
+          labels:
+            severity: warning
+            team: porttrack
+          annotations:
+            summary: "PortTrack high response time"
+            description: "95th percentile of response time is above 2 seconds"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-performance"
+        
+        - alert: PortTrackHighErrorRate
+          expr: rate(http_requests_total{job="porttrack-app", status=~"5.."}[5m]) / rate(http_requests_total{job="porttrack-app"}[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            team: porttrack
+          annotations:
+            summary: "PortTrack high error rate"
+            description: "Error rate is above 5% for the last 5 minutes"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-errors"
+    
+    # Reglas de infraestructura Kubernetes
+    - name: kubernetes-infrastructure
+      rules:
+        - alert: NodeDown
+          expr: up{job="kubernetes-nodes"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            team: infrastructure
+          annotations:
+            summary: "Node {{ $labels.instance }} is down"
+            description: "Node {{ $labels.instance }} has been down for more than 5 minutes"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/kubernetes-nodes"
+        
+        - alert: HighCPUUsage
+          expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+          for: 10m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "High CPU usage on {{ $labels.instance }}"
+            description: "CPU usage is above 80% on {{ $labels.instance }}"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/kubernetes-nodes"
+        
+        - alert: HighMemoryUsage
+          expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+          for: 10m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "High memory usage on {{ $labels.instance }}"
+            description: "Memory usage is above 85% on {{ $labels.instance }}"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/kubernetes-nodes"
+        
+        - alert: HighDiskUsage
+          expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+          for: 10m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "High disk usage on {{ $labels.instance }}"
+            description: "Disk usage is above 90% on {{ $labels.instance }}"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/kubernetes-nodes"
+    
+    # Reglas de bases de datos
+    - name: database-monitoring
+      rules:
+        - alert: PostgreSQLDown
+          expr: up{job="postgresql"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "PostgreSQL is down"
+            description: "PostgreSQL database has been down for more than 1 minute"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-database"
+        
+        - alert: MongoDBDown
+          expr: up{job="mongodb"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "MongoDB is down"
+            description: "MongoDB database has been down for more than 1 minute"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-database"
+        
+        - alert: RedisDown
+          expr: up{job="redis"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "Redis is down"
+            description: "Redis cache has been down for more than 1 minute"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-cache"
+    
+    # Reglas de ELK Stack
+    - name: elk-stack-monitoring
+      rules:
+        - alert: ElasticsearchDown
+          expr: up{job="elasticsearch"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "Elasticsearch is down"
+            description: "Elasticsearch has been down for more than 2 minutes"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-search"
+        
+        - alert: LogstashDown
+          expr: up{job="logstash"} == 0
+          for: 2m
+          labels:
+            severity: warning
+            team: porttrack
+          annotations:
+            summary: "Logstash is down"
+            description: "Logstash has been down for more than 2 minutes"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-logs"
+        
+        - alert: KibanaDown
+          expr: up{job="kibana"} == 0
+          for: 2m
+          labels:
+            severity: warning
+            team: porttrack
+          annotations:
+            summary: "Kibana is down"
+            description: "Kibana has been down for more than 2 minutes"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-logs"
+    
+    # Reglas de AWS API Gateway y Nginx
+    - name: gateway-monitoring
+      rules:
+              - alert: AWSAPIGatewayDown
+        expr: up{job="aws-api-gateway"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "AWS API Gateway is down"
+description: "AWS API Gateway has been down for more than 1 minute"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-gateway"
+        
+        - alert: NginxDown
+          expr: up{job="nginx"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: porttrack
+          annotations:
+            summary: "Nginx is down"
+            description: "Nginx reverse proxy has been down for more than 1 minute"
+            grafana_url: "http://grafana.porttrack-monitoring:3000/d/porttrack-gateway"
+    
+    # Reglas del sistema de monitoreo
+    - name: monitoring-system
+      rules:
+        - alert: PrometheusDown
+          expr: up{job="prometheus"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: monitoring
+          annotations:
+            summary: "Prometheus is down"
+            description: "Prometheus has been down for more than 1 minute"
+        
+        - alert: AlertManagerDown
+          expr: up{job="alertmanager"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: monitoring
+          annotations:
+            summary: "AlertManager is down"
+            description: "AlertManager has been down for more than 1 minute"
+        
+        - alert: GrafanaDown
+          expr: up{job="grafana"} == 0
+          for: 1m
+          labels:
+            severity: warning
+            team: monitoring
+          annotations:
+            summary: "Grafana is down"
+            description: "Grafana has been down for more than 1 minute"

@@ -1,0 +1,171 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: porttrack-app
+  namespace: porttrack-dev
+  labels:
+    app.kubernetes.io/name: porttrack-app
+    app.kubernetes.io/part-of: porttrack-platform
+    environment: development
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: porttrack-app
+      environment: development
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: porttrack-app
+        environment: development
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: porttrack-app
+        image: ghcr.io/porttrack/platform:dev
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        - name: health
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "development"
+        - name: APP_NAME
+          value: "PortTrack"
+        - name: APP_VERSION
+          value: "dev"
+        - name: DB_HOST
+          value: "porttrack-postgresql-dev"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "porttrack_dev"
+        - name: REDIS_HOST
+          value: "porttrack-redis-dev"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: ELASTICSEARCH_HOST
+          value: "porttrack-elasticsearch-dev"
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: AUTH0_DOMAIN
+          valueFrom:
+            secretKeyRef:
+              name: porttrack-secrets-dev
+              key: auth0-domain
+        - name: AUTH0_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: porttrack-secrets-dev
+              key: auth0-client-id
+        - name: AUTH0_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: porttrack-secrets-dev
+              key: auth0-client-secret
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: porttrack-app-service
+  namespace: porttrack-dev
+  labels:
+    app.kubernetes.io/name: porttrack-app
+    app.kubernetes.io/part-of: porttrack-platform
+    environment: development
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  - name: health
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: porttrack-app
+    environment: development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: porttrack-config-dev
+  namespace: porttrack-dev
+  labels:
+    app.kubernetes.io/name: porttrack-config
+    app.kubernetes.io/part-of: porttrack-platform
+    environment: development
+data:
+  APP_NAME: "PortTrack"
+  APP_VERSION: "dev"
+  APP_ENV: "development"
+  DB_HOST: "porttrack-postgresql-dev"
+  DB_PORT: "5432"
+  DB_NAME: "porttrack_dev"
+  REDIS_HOST: "porttrack-redis-dev"
+  REDIS_PORT: "6379"
+  ELASTICSEARCH_HOST: "porttrack-elasticsearch-dev"
+  ELASTICSEARCH_PORT: "9200"
+  LOG_LEVEL: "debug"
+  METRICS_PORT: "9090"
+  SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  ALERT_CPU_THRESHOLD: "70"
+  ALERT_MEMORY_THRESHOLD: "70"
+  ALERT_DISK_THRESHOLD: "80"
+  ALERT_RESPONSE_TIME_THRESHOLD: "3000"

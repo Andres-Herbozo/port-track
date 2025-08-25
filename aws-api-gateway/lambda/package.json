@@ -1,0 +1,17 @@
+{
+  "name": "porttrack-authorizer",
+  "version": "1.0.0",
+  "description": "Lambda Authorizer para PortTrack API Gateway",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm install && zip -r authorizer.zip ."
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.0.1"
+  },
+  "devDependencies": {},
+  "keywords": ["aws", "lambda", "authorizer", "auth0"],
+  "author": "PortTrack Team",
+  "license": "MIT"
+}

@@ -1,0 +1,46 @@
+name: Deploy AWS API Gateway
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: [ 'aws-api-gateway/**' ]
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-api-gateway:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      
+    - name: Terraform Init
+      working-directory: ./aws-api-gateway
+      run: terraform init
+      
+    - name: Terraform Plan
+      working-directory: ./aws-api-gateway
+      run: terraform plan -out=tfplan
+      
+    - name: Terraform Apply
+      working-directory: ./aws-api-gateway
+      run: terraform apply tfplan
+      
+    - name: Deploy API
+      run: |
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`porttrack-api`].id' --output text)
+        aws apigateway create-deployment \
+          --rest-api-id $API_ID \
+          --stage-name production

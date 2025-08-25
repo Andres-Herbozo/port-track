@@ -1,0 +1,120 @@
+openapi: 3.0.0
+info:
+  title: PortTrack API
+  version: 1.0.0
+  description: API Gateway para PortTrack Platform
+
+servers:
+  - url: https://{api-id}.execute-api.{region}.amazonaws.com/{stage}
+    variables:
+      api-id:
+        default: "your-api-id"
+      region:
+        default: "us-east-1"
+      stage:
+        default: "dev"
+
+paths:
+  /api/ships:
+    get:
+      summary: Obtener lista de barcos
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Lista de barcos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ship'
+        '401':
+          description: No autorizado
+        '429':
+          description: Rate limit excedido
+
+  /api/cargo:
+    get:
+      summary: Obtener lista de carga
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Lista de carga
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cargo'
+
+  /api/admin:
+    get:
+      summary: Acceso al panel de administración
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Panel de administración
+        '401':
+          description: No autorizado
+
+  /api/grafana:
+    get:
+      summary: Acceso a Grafana
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Dashboard de Grafana
+        '401':
+          description: No autorizado
+
+  /api/kibana:
+    get:
+      summary: Acceso a Kibana
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Dashboard de Kibana
+        '401':
+          description: No autorizado
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  schemas:
+    Ship:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        imo_number:
+          type: string
+        ship_type:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, maintenance]
+
+    Cargo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cargo_type:
+          type: string
+        weight_kg:
+          type: number
+        hazardous:
+          type: boolean
